@@ -32,3 +32,11 @@ def create_task(task: Task):
     return {
         "message" : "タスクを追加しました！"
     }
+    
+# タスクIDでタスクを取得する
+@app.get("/tasks/{task_id}")
+def get_task(task_id: int):
+    for task in tasks:
+        if task["id"] == task_id:
+            return {"task": task}
+    return {"message": "タスクが見つかりませんでした。"}
