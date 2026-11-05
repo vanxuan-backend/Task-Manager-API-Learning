@@ -40,3 +40,12 @@ def get_task(task_id: int):
         if task["id"] == task_id:
             return {"task": task}
     return {"message": "タスクが見つかりませんでした。"}
+
+
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int):
+    for index, task in enumerate(tasks):
+        if task["id"] == task_id:
+            del tasks[index]
+            return {"message": "タスクを削除しました！"}
+    return {"message": "タスクが見つかりませんでした。"}
