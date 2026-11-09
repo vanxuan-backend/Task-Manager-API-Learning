@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI()
 
 # 一時データ（サーバーを停止すると消失します）
 tasks = [
     {"id": 1, "title": "簡単Task Manager API", "completed": False},
-    {"id": 2, "title": "Task Manager API 1.4", "completed": False}
+    {"id": 2, "title": "Task Manager API 1.5", "completed": False}
 ]
 
 # 入力データ構造の定義
@@ -19,10 +20,16 @@ class Task(BaseModel):
 def read_root():
     raise HTTPException(status_code=200, detail="こんにちは")
 
-# 全タスク一覧の取得
+# タスク一覧取得 - 絞り込み機能
 @app.get("/tasks")
-def get_tasks():
-    raise HTTPException(status_code=200, detail={"tasks": tasks})
+def get_tasks(completed: Optional[bool] = None):
+    # completed パラメータが指定されていない場合、すべてのタスクを返す。
+    if completed is None:
+        raise HTTPException(status_code=200, detail={"tasks": tasks})
+
+    # completed パラメータが指定されている場合、リスト内包表記（List Comprehension）を使用して、条件に一致するタスクを抽出する。
+    filtered_tasks = [task for task in tasks if task["completed"] == completed]
+    raise HTTPException(status_code=200, detail={"tasks": filtered_tasks})
 
 # 新しいタスクを追加する
 @app.post("/tasks")
