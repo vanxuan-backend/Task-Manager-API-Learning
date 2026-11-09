@@ -8,7 +8,7 @@ app = FastAPI()
 # 一時データ（サーバーを停止すると消失します）
 tasks = [
     {"id": 1, "title": "簡単Task Manager API", "completed": False},
-    {"id": 2, "title": "Task Manager API 1.6", "completed": False}
+    {"id": 2, "title": "Task Manager API 1.7", "completed": False}
 ]
 
 # 入力データ構造の定義
@@ -39,14 +39,21 @@ def create_task(task: Task):
     tasks.append(new_task)
     raise HTTPException(status_code=201, detail="タスクを追加しました！")
 
-# タスクIDでタスクを取得する
+# タスクのフィルタリングとページネーション
 @app.get("/tasks/{task_id}")
-def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            raise HTTPException(status_code=200, detail={"task": task})
-    raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
-
+def get_task(completed: Optional[bool] = None, skip: int = 0, limit: int = 10):
+    filtered_tasks = tasks
+    if completed is not None:
+        filtered_tasks = [task for task in tasks if task["completed"] == completed]
+    #スライシングによるページネーション (Pagination)
+    paginated_tasks = filtered_tasks[skip : skip +limit]
+    
+    return {
+        "total" : len(filtered_tasks),
+        "skip" : skip,
+        "limit" : limit,
+        "tasks" : paginated_tasks
+    }
 # タスクIDでタスクを削除する
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
