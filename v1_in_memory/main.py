@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -6,7 +6,7 @@ app = FastAPI()
 # 一時データ（サーバーを停止すると消失します）
 tasks = [
     {"id": 1, "title": "簡単Task Manager API", "completed": False},
-    {"id": 2, "title": "Task Manager API 1.3", "completed": False}
+    {"id": 2, "title": "Task Manager API 1.4", "completed": False}
 ]
 
 # 入力データ構造の定義
@@ -17,29 +17,27 @@ class Task(BaseModel):
     
 @app.get("/")
 def read_root():
-    return {"message": "こんにちは"}
+    raise HTTPException(status_code=200, detail="こんにちは")
 
 # 全タスク一覧の取得
 @app.get("/tasks")
 def get_tasks():
-    return {"tasks": tasks}
+    raise HTTPException(status_code=200, detail={"tasks": tasks})
 
 # 新しいタスクを追加する
 @app.post("/tasks")
 def create_task(task: Task):
     new_task = task.model_dump()
     tasks.append(new_task)
-    return {
-        "message" : "タスクを追加しました！"
-    }
-    
+    raise HTTPException(status_code=201, detail="タスクを追加しました！")
+
 # タスクIDでタスクを取得する
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
-            return {"task": task}
-    return {"message": "タスクが見つかりませんでした。"}
+            raise HTTPException(status_code=200, detail={"task": task})
+    raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
 
 # タスクIDでタスクを削除する
 @app.delete("/tasks/{task_id}")
@@ -47,8 +45,8 @@ def delete_task(task_id: int):
     for index, task in enumerate(tasks):
         if task["id"] == task_id:
             del tasks[index]
-            return {"message": "タスクを削除しました！"}
-    return {"message": "タスクが見つかりませんでした。"}
+            raise HTTPException(status_code=200, detail="タスクを削除しました！")
+    raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
 
 # タスクIDでタスクを更新する
 @app.put("/tasks/{task_id}")
@@ -56,5 +54,5 @@ def update_task(task_id: int, updated_task: Task):
     for index, task in enumerate(tasks):
         if task["id"] == task_id:
             tasks[index] = updated_task.model_dump()
-            return {"message": "タスクを更新しました！"}
-    return {"message": "タスクが見つかりませんでした。"}
+            raise HTTPException(status_code=200, detail="タスクを更新しました！")
+    raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
