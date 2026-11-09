@@ -6,7 +6,7 @@ app = FastAPI()
 # 一時データ（サーバーを停止すると消失します）
 tasks = [
     {"id": 1, "title": "簡単Task Manager API", "completed": False},
-    {"id": 2, "title": "Task Manager API 1.0.0", "completed": False}
+    {"id": 2, "title": "Task Manager API 1.3", "completed": False}
 ]
 
 # 入力データ構造の定義
@@ -41,11 +41,20 @@ def get_task(task_id: int):
             return {"task": task}
     return {"message": "タスクが見つかりませんでした。"}
 
-
+# タスクIDでタスクを削除する
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
     for index, task in enumerate(tasks):
         if task["id"] == task_id:
             del tasks[index]
             return {"message": "タスクを削除しました！"}
+    return {"message": "タスクが見つかりませんでした。"}
+
+# タスクIDでタスクを更新する
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, updated_task: Task):
+    for index, task in enumerate(tasks):
+        if task["id"] == task_id:
+            tasks[index] = updated_task.model_dump()
+            return {"message": "タスクを更新しました！"}
     return {"message": "タスクが見つかりませんでした。"}
