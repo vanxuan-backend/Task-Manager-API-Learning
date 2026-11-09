@@ -1,19 +1,20 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from pydantic import Field
 
 app = FastAPI()
 
 # 一時データ（サーバーを停止すると消失します）
 tasks = [
     {"id": 1, "title": "簡単Task Manager API", "completed": False},
-    {"id": 2, "title": "Task Manager API 1.5", "completed": False}
+    {"id": 2, "title": "Task Manager API 1.6", "completed": False}
 ]
 
 # 入力データ構造の定義
 class Task(BaseModel):
     id: int
-    title: str
+    title: str = Field(..., min_length=3, max_length=100, description="タスクのタイトル（3文字以上、100文字以下）")
     completed: bool = False
     
 @app.get("/")
