@@ -14,7 +14,7 @@ class TaskCreate(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "Task Manager API 2.1"}
+    return {"message": "Task Manager API 2.2"}
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
@@ -41,3 +41,16 @@ def create_task(task: TaskCreate):
             "completed": task.completed
         }
     }
+    
+@app.get("/tasks")
+def get_tasks():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    #SQLのSELECT *文を使用して、tasksテーブルの全カラムを取得する。
+    cursor.execute("SELECT * FROM tasks")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    tasks = [dict(row) for row in rows]
+    return {"tasks": tasks}
+
