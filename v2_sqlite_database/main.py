@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from v2_sqlite_database.database import create_tables, get_db_connection
 
@@ -14,7 +14,7 @@ class TaskCreate(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "Task Manager API 2.2"}
+    return {"message": "Task Manager API 2.3"}
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
@@ -54,3 +54,33 @@ def get_tasks():
     tasks = [dict(row) for row in rows]
     return {"tasks": tasks}
 
+@app.get("/tasks/{task_id}")
+def get_task(task_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    #SELECT文とWHERE句を組み合わせて、IDを指定してデータを検索する。
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone() #該当するデータが存在する場合、1件のみ取得する。
+    conn.close()
+    
+    if row is None:
+        raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
+    
+    return {"tasks": dict(row)}
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    #DELETE文とWHERE句を組み合わせて、IDを指定してデータを削除する。
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    deleted_rows = cursor.rowcount
+    conn.close()
+    
+    if deleted_rows == 0:
+        raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
+    
+    return {"message": f"ID {task_id} のタスクを正常に削除しました。"}
+    
