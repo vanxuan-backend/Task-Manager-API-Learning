@@ -14,7 +14,7 @@ class TaskCreate(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "Task Manager API 2.3"}
+    return {"message": "Task Manager API 2.4"}
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
@@ -84,3 +84,29 @@ def delete_task(task_id: int):
     
     return {"message": f"ID {task_id} のタスクを正常に削除しました。"}
     
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, updated_task: TaskCreate):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    ## SQL文内の「?」の順序は、下記のタプル内の変数の順序と一致させる。
+    cursor.execute(
+        "UPDATE tasks SET title = ?, completed = ? WHERE id = ?", 
+        (updated_task.title, updated_task.completed, task_id)
+    )
+    conn.commit()
+    updated_rows = cursor.rowcount
+    conn.close()
+    
+    #影響を受けた行がない場合、指定されたIDのデータは存在しない。
+    if updated_rows == 0:
+        raise HTTPException(status_code=404, detail="タスクが見つかりませんでした。")
+    
+    return {
+        "message": f"ID {task_id} のタスクを正常に更新しました。",
+        "task": {
+            "id": task_id,
+            "title": updated_task.title,
+            "completed": updated_task.completed
+        }
+    }
