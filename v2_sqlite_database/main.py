@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from typing import Optional
 from v2_sqlite_database.database import create_tables, get_db_connection
 
 app = FastAPI()
@@ -14,7 +15,7 @@ class TaskCreate(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "Task Manager API 2.4"}
+    return {"message": "Task Manager API 2.5"}
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
@@ -41,19 +42,54 @@ def create_task(task: TaskCreate):
             "completed": task.completed
         }
     }
-    
+
 @app.get("/tasks")
-def get_tasks():
+def get_tasks(
+    completed: Optional[bool] = None,
+    search: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 10
+):
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    #SQLのSELECT *文を使用して、tasksテーブルの全カラムを取得する。
-    cursor.execute("SELECT * FROM tasks")
+    
+    query_conditions = []
+    params = []
+    
+    if completed is not None:
+        query_conditions.append("completed = ?")
+        params.append(completed)
+    
+    if search is not None:
+        #LIKE演算子と「%」ワイルドカードを使用して、指定したキーワードを含む文字列を検索する。
+        query_conditions.append("title LIKE ?")
+        params.append(f"%{search}%")
+    
+    where_clause = ""
+    if query_conditions:
+        where_clause = "WHERE " + " AND ".join(query_conditions)
+        
+    #COUNT(*)を使用して、データを取得せずにレコード数を効率的にカウントする。
+    count_query = f"SELECT COUNT(*) FROM tasks {where_clause}"
+    cursor.execute(count_query, params)
+    total_records = cursor.fetchone()[0]
+    
+    #LIMITは取得するレコードの最大件数を指定し、OFFSETは取得対象から除外するレコード数を指定する。
+    data_query = f"SELECT * FROM tasks {where_clause} LIMIT ? OFFSET ?"
+    params.extend([limit, skip])
+    cursor.execute(data_query, params)
     rows = cursor.fetchall()
     conn.close()
     
-    tasks = [dict(row) for row in rows]
-    return {"tasks": tasks}
-
+    return {
+        "total": total_records,
+        "skip": skip,
+        "limit": limit,
+        "search_keyword": search,
+        "tasks": [dict(row) for row in rows]
+    }
+    
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
     conn = get_db_connection()
@@ -110,3 +146,4 @@ def update_task(task_id: int, updated_task: TaskCreate):
             "completed": updated_task.completed
         }
     }
+
